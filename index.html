@@ -5,12 +5,12 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta name="theme-color" content="#2563eb">
         <meta name="description"
-            content="Buku PAI PDF Reader - Digital Book Experience with Realistic 3D Flipbook">
+            content="Buku Digital PAI PDF Reader - Digital Book Experience with Realistic 3D Flipbook">
         <title>Buku PAI PDF Reader - Modern 3D Flipbook Experience</title>
 
         <!-- PWA Manifest Data URL -->
         <link rel="manifest"
-            href='data:application/manifest+json,{"name":"Buku PAI PDF Reader","short_name":"LuminaPDF","start_url":".","display":"standalone","background_color":"#0f172a","theme_color":"#2563eb","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/337/337946.png","sizes":"512x512","type":"image/png"}]}'>
+            href='data:application/manifest+json,{"name":"Buku Digital PAI PDF Reader","short_name":"LuminaPDF","start_url":".","display":"standalone","background_color":"#0f172a","theme_color":"#2563eb","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/337/337946.png","sizes":"512x512","type":"image/png"}]}'>
 
         <!-- Tailwind CSS CDN -->
         <script src="https://cdn.tailwindcss.com"></script>
@@ -220,6 +220,7 @@
                     </div>
                     <span
                         class="font-extrabold text-lg tracking-tight hidden sm:inline bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-500 dark:from-blue-400 dark:to-indigo-300">Buku
+                        Digital
                         PAI</span>
                 </div>
             </div>
@@ -451,8 +452,12 @@
         // file (file://...).
         // =====================================================================
         const LIBRARY = [
-            { id: 'buku-1', title: 'Nama Buku 1', file: 'buku-1.pdf', cover: 'cover_buku-1.jpg' },
-            { id: 'buku-2', title: 'Nama Buku 2', file: 'buku-2.pdf' },
+            { id: 'buku-1', title: 'Buku PAI Kelas 1', file: 'buku-pai-kelas-1.pdf', cover: 'cover_buku-buku-pai-kelas-1.jpg' },
+            { id: 'buku-2', title: 'Buku PAI Kelas 2', file: 'buku-pai-kelas-2.pdf', cover: 'cover_buku-buku-pai-kelas-2.jpg' },
+            { id: 'buku-3', title: 'Buku PAI Kelas 3', file: 'buku-pai-kelas-3.pdf', cover: 'cover_buku-buku-pai-kelas-3.jpg' },
+            { id: 'buku-4', title: 'Buku PAI Kelas 4', file: 'buku-pai-kelas-4.pdf', cover: 'cover_buku-buku-pai-kelas-4.jpg' },
+            { id: 'buku-5', title: 'Buku PAI Kelas 5', file: 'buku-pai-kelas-5.pdf', cover: 'cover_buku-buku-pai-kelas-5.jpg' },
+            { id: 'buku-6', title: 'Buku PAI Kelas 6', file: 'buku-pai-kelas-6.pdf', cover: 'cover_buku-buku-pai-kelas-6.jpg' },
         ];
 
         const state = {
@@ -769,7 +774,7 @@
             DOM.floatingToolbar.classList.remove('hidden');
             DOM.totalPagesText.textContent = state.totalPages;
             DOM.currentPageInput.max = state.totalPages;
-            if (title) document.title = `${title} - Buku PAI PDF Reader`;
+            if (title) document.title = `${title} - Buku Digital PAI PDF Reader`;
 
             await build3DFlipbook();
             await renderThumbnails();
