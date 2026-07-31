@@ -742,14 +742,20 @@
             const myToken = ++state.loadToken;
 
             // Hentikan dulu buku 3D yang sedang aktif SEBELUM memulai proses
-            // baru, supaya tidak ada instance StPageFlip lama yang masih
-            // menempel ke elemen DOM yang nanti akan diganti.
+            // baru. Kita tidak hanya innerHTML='' + destroy(), tapi benar-benar
+            // MENGGANTI elemen #flipbook dengan elemen <div> baru yang bersih
+            // total. Ini penting karena StPageFlip.destroy() tidak selalu
+            // membersihkan semua state/listener internal yang menempel pada
+            // elemen kontainer — kalau elemen lama dipakai ulang, instance
+            // StPageFlip yang baru bisa bentrok dengan sisa instance lama dan
+            // gagal render tanpa pesan error yang jelas. Membuat elemen baru
+            // dari nol menghilangkan risiko itu sepenuhnya.
             stopAutoFlipIfRunning();
             if (state.pageFlip) {
-                try { state.pageFlip.destroy(); } catch (err) { console.warn(err); }
+                try { state.pageFlip.destroy(); } catch (err) { console.warn('destroy() lama gagal (diabaikan):', err); }
                 state.pageFlip = null;
             }
-            DOM.flipbook.innerHTML = '';
+            resetFlipbookContainer();
 
             Swal.fire({
                 title: 'Mengambil Buku dari Server...',
@@ -783,7 +789,9 @@
                 console.error(err);
                 Swal.fire(
                     'Gagal Memuat Buku',
-                    `Tidak bisa mengambil "${book.title}" dari "${book.file}". Pastikan file tersebut ada di server dan halaman ini diakses lewat http/https (bukan dibuka langsung sebagai file lokal).`,
+                    `Tidak bisa membuka "${book.title}" dari "${book.file}".<br><br>` +
+                    `<span class="text-xs text-slate-400">Detail teknis: ${(err && err.message) ? err.message : err}</span><br><br>` +
+                    `Kemungkinan penyebab: file tidak ada di path tersebut, halaman diakses lewat file:// (bukan http/https), atau nama file/case-sensitivity tidak cocok.`,
                     'error'
                 );
             }
@@ -791,6 +799,17 @@
 
         function stopAutoFlipIfRunning() {
             if (state.isAutoFlipping) toggleAutoFlip();
+        }
+
+        // Mengganti elemen <div id="flipbook"> dengan elemen baru yang benar-benar
+        // bersih (bukan sekadar innerHTML=''), supaya instance StPageFlip yang
+        // baru tidak mewarisi sisa state/listener dari instance sebelumnya.
+        function resetFlipbookContainer() {
+            const fresh = document.createElement('div');
+            fresh.id = 'flipbook';
+            fresh.className = 'stpageflip-container';
+            DOM.flipbook.replaceWith(fresh);
+            DOM.flipbook = fresh;
         }
 
         // Logika bersama untuk menampilkan dokumen PDF yang sudah dimuat
