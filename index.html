@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="theme-color" content="#2563eb">
+        <meta name="description"
+            content="Buku PAI PDF Reader - Digital Book Experience with Realistic 3D Flipbook">
+        <title>Buku PAI PDF Reader - Modern 3D Flipbook Experience</title>
+
+        <!-- PWA Manifest Data URL -->
+        <link rel="manifest"
+            href='data:application/manifest+json,{"name":"Buku PAI PDF Reader","short_name":"LuminaPDF","start_url":".","display":"standalone","background_color":"#0f172a","theme_color":"#2563eb","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/337/337946.png","sizes":"512x512","type":"image/png"}]}'>
+
+        <!-- Tailwind CSS CDN -->
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff', 100: '#dbeafe', 200: '#bfdbfe', 300: '#93c5fd',
+                            400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8',
+                            800: '#1e40af', 900: '#1e3a8a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+        <!-- Font Awesome 6 -->
+        <link rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+        <!-- Google Fonts -->
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap"
+            rel="stylesheet">
+
+        <!-- Third Party Libraries -->
+        <!-- PDF.js v3.11.174 -->
+        <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+        <!-- StPageFlip (Interactive 3D Flipbook Engine) -->
+        <script
+            src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.js"
+            onerror="var s=document.createElement('script');s.src='https://unpkg.com/page-flip@2.0.7/dist/js/page-flip.browser.js';document.head.appendChild(s);"></script>
+        <!-- GSAP Animation -->
+        <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+        <!-- SweetAlert2 -->
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+        <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            user-select: none;
+        }
+        h1, h2, h3, .font-heading {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        /* Glassmorphism Styles */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        .dark .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .dark .glass-card {
+            background: rgba(30, 41, 59, 0.5);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Reading Filter Modes */
+        .mode-sepia {
+            filter: sepia(0.35) contrast(0.95) brightness(0.95) !important;
+        }
+        .mode-night {
+            filter: invert(0.9) hue-rotate(180deg) brightness(0.85) contrast(1.1) !important;
+        }
+        .mode-dark-reader {
+            filter: invert(0.85) hue-rotate(180deg) !important;
+        }
+
+        /* Page Flip Container & Realistic Book Spine */
+        #book-stage {
+            perspective: 2000px;
+        }
+
+        .stpageflip-container {
+            margin: auto;
+            position: relative;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border-radius: 4px;
+            overflow: visible !important;
+            transform-origin: center center;
+        }
+
+        .page-sheet {
+            background-color: #ffffff;
+            position: relative;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        /* Realistic Spine Fold & Shadow Effects */
+        .page-sheet.--left {
+            border-right: 1px solid rgba(0, 0, 0, 0.15);
+            background: linear-gradient(to right, #ffffff 0%, #f8fafc 92%, #e2e8f0 100%);
+            box-shadow: inset -10px 0 20px -10px rgba(0, 0, 0, 0.15);
+        }
+        .page-sheet.--right {
+            border-left: 1px solid rgba(0, 0, 0, 0.15);
+            background: linear-gradient(to left, #ffffff 0%, #f8fafc 92%, #e2e8f0 100%);
+            box-shadow: inset 10px 0 20px -10px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.4); border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(107, 114, 128, 0.8); }
+
+        .sidebar-collapsed {
+            margin-left: -20rem !important;
+        }
+
+        .thumb-active {
+            box-shadow: 0 0 0 2px #2563eb;
+            background: rgba(37, 99, 235, 0.12);
+        }
+
+        .library-item.library-active {
+            box-shadow: inset 0 0 0 1.5px #2563eb;
+            background: rgba(37, 99, 235, 0.12);
+        }
+
+        .tab-btn.active {
+            color: #2563eb;
+            border-color: #2563eb;
+        }
+        .dark .tab-btn.active {
+            color: #60a5fa;
+            border-color: #60a5fa;
+        }
+
+        #search-nav { display: none; }
+        #search-nav.show { display: flex; }
+    </style>
+    </head>
+    <body
+        class="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 h-screen w-screen flex flex-col transition-colors duration-300">
+
+        <!-- Ambient Glowing Orbs -->
+        <div
+            class="fixed -top-40 -left-40 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none z-0"></div>
+        <div
+            class="fixed -bottom-40 -right-40 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none z-0"></div>
+
+        <!-- SPLASH SCREEN -->
+        <div id="splash-screen"
+            class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-900 text-white transition-opacity duration-700">
+            <div class="relative flex items-center justify-center mb-6">
+                <div
+                    class="w-24 h-24 rounded-3xl bg-gradient-to-tr from-blue-600 to-indigo-500 animate-pulse blur-lg absolute"></div>
+                <div
+                    class="w-24 h-24 rounded-3xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center relative shadow-2xl z-10 border border-white/20">
+                    <i
+                        class="fa-solid fa-book-open-reader text-4xl text-white"></i>
+                </div>
+            </div>
+            <h1
+                class="text-3xl font-extrabold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-200">Buku
+                PAI
+                PDF</h1>
+            <p class="text-slate-400 text-sm mt-2 font-medium">Interactive 3D
+                Flipbook Reader</p>
+            <div
+                class="w-48 h-1.5 bg-slate-800 rounded-full mt-8 overflow-hidden relative">
+                <div id="splash-progress"
+                    class="h-full bg-blue-500 w-0 transition-all duration-300"></div>
+            </div>
+        </div>
+
+        <!-- HEADER NAVBAR -->
+        <header
+            class="h-16 glass-panel z-30 px-4 flex items-center justify-between border-b border-slate-200/50 dark:border-slate-800/50 shrink-0">
+            <div class="flex items-center gap-3">
+                <button id="toggle-sidebar-left"
+                    class="p-2.5 rounded-xl bg-slate-200/50 dark:bg-slate-800/50 hover:bg-slate-300/50 dark:hover:bg-slate-700/50 transition flex items-center justify-center text-blue-600 dark:text-blue-400"
+                    title="Sembunyikan/Tampilkan Sidebar">
+                    <i id="sidebar-icon"
+                        class="fa-solid fa-angles-left text-base"></i>
+                </button>
+                <div class="flex items-center gap-2.5">
+                    <div
+                        class="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center shadow-md shadow-blue-500/20">
+                        <i
+                            class="fa-solid fa-book-open text-white text-base"></i>
+                    </div>
+                    <span
+                        class="font-extrabold text-lg tracking-tight hidden sm:inline bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-500 dark:from-blue-400 dark:to-indigo-300">Buku
+                        PAI</span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 max-w-md w-full mx-2">
+                <div
+                    class="relative w-full glass-card rounded-xl overflow-hidden flex items-center px-3 py-1.5 border border-slate-300/50 dark:border-slate-700/50">
+                    <i id="search-icon"
+                        class="fa-solid fa-magnifying-glass text-slate-400 text-xs mr-2 cursor-pointer"></i>
+                    <input id="search-input" type="text"
+                        placeholder="Cari kata kunci... (Enter)"
+                        class="bg-transparent text-xs w-full focus:outline-none text-slate-700 dark:text-slate-200">
+                    <div id="search-nav"
+                        class="items-center gap-1 text-[10px] text-slate-400 font-semibold shrink-0 ml-1">
+                        <span id="search-count">0/0</span>
+                        <button id="search-prev" type="button"
+                            class="p-1 hover:text-blue-500"
+                            title="Sebelumnya"><i
+                                class="fa-solid fa-chevron-up"></i></button>
+                        <button id="search-next" type="button"
+                            class="p-1 hover:text-blue-500"
+                            title="Berikutnya"><i
+                                class="fa-solid fa-chevron-down"></i></button>
+                        <button id="search-close" type="button"
+                            class="p-1 hover:text-red-500" title="Tutup"><i
+                                class="fa-solid fa-xmark"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-1.5">
+                <!-- Sound Effect Toggle -->
+                <button id="toggle-sound"
+                    class="p-2 rounded-xl hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition text-blue-500"
+                    title="Efek Suara Membalik Halaman">
+                    <i class="fa-solid fa-volume-high"></i>
+                </button>
+
+                <button id="toggle-filter-menu"
+                    class="p-2 rounded-xl hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition">
+                    <i
+                        class="fa-solid fa-circle-half-stroke text-slate-600 dark:text-slate-300"></i>
+                </button>
+
+                <button id="toggle-theme"
+                    class="p-2 rounded-xl hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition">
+                    <i
+                        class="fa-solid fa-moon text-slate-600 dark:text-slate-300 dark:hidden"></i>
+                    <i
+                        class="fa-solid fa-sun text-amber-400 hidden dark:block"></i>
+                </button>
+
+                <!-- FULLSCREEN BUTTON -->
+                <button id="toggle-fullscreen"
+                    class="p-2 rounded-xl hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition"
+                    title="Layar Penuh">
+                    <i id="fullscreen-icon"
+                        class="fa-solid fa-expand text-slate-600 dark:text-slate-300"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- WORKSPACE -->
+        <div class="flex-1 flex overflow-hidden relative">
+
+            <!-- SIDEBAR KIRI -->
+            <aside id="sidebar-left"
+                class="w-80 glass-panel border-r border-slate-200/50 dark:border-slate-800/50 flex flex-col transition-all duration-300 z-20 shrink-0 h-full">
+                <div
+                    class="flex border-b border-slate-200/50 dark:border-slate-800/50 text-xs font-semibold text-slate-500">
+                    <button
+                        class="tab-btn active flex-1 py-3 border-b-2 border-blue-600 text-blue-600 dark:text-blue-400"
+                        data-tab="tab-library" title="Perpustakaan"><i
+                            class="fa-solid fa-book-bookmark"></i></button>
+                    <button
+                        class="tab-btn flex-1 py-3 border-b-2 border-transparent"
+                        data-tab="tab-thumbs" title="Thumbnail Halaman"><i
+                            class="fa-solid fa-border-all"></i></button>
+                    <button
+                        class="tab-btn flex-1 py-3 border-b-2 border-transparent"
+                        data-tab="tab-outline" title="Daftar Isi"><i
+                            class="fa-solid fa-list-ul"></i></button>
+                </div>
+
+                <div class="flex-1 overflow-y-auto p-3 space-y-2">
+                    <div id="tab-library" class="tab-content space-y-1.5"></div>
+                    <div id="tab-thumbs"
+                        class="tab-content hidden grid grid-cols-2 gap-3">
+                        <div
+                            class="col-span-2 text-center text-xs text-slate-400 py-8">Belum
+                            ada dokumen yang dimuat</div>
+                    </div>
+                    <div id="tab-outline"
+                        class="tab-content hidden space-y-1 text-xs">
+                        <p class="text-slate-400 text-center py-8">Daftar isi
+                            tidak ditemukan</p>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- VIEWER AREA -->
+            <main id="drop-zone"
+                class="flex-1 flex flex-col relative overflow-hidden bg-slate-200/60 dark:bg-slate-900/60 items-center justify-center">
+
+                <!-- VIEWER CONTAINER -->
+                <div id="viewer-container"
+                    class="flex-1 w-full h-full overflow-hidden flex items-center justify-center p-4 relative select-none">
+
+                    <!-- EMPTY STATE -->
+                    <div id="empty-state" class="text-center p-8 max-w-md">
+                        <div
+                            class="w-20 h-20 bg-blue-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-xl">
+                            <i class="fa-solid fa-book-open text-4xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2">3D Flipbook
+                            Reader</h3>
+                        <p class="text-xs text-slate-500 mb-6">Pilih salah
+                            satu buku dari daftar Perpustakaan di sidebar kiri
+                            untuk mulai membaca.</p>
+                    </div>
+
+                    <!-- 3D FLIPBOOK STAGE -->
+                    <div id="book-stage"
+                        class="hidden my-auto mx-auto flex items-center justify-center w-full h-full">
+                        <div id="flipbook" class="stpageflip-container"></div>
+                    </div>
+                </div>
+
+                <!-- FLOATING NAVIGATION BAR -->
+                <div id="floating-toolbar"
+                    class="absolute bottom-6 z-20 glass-panel px-4 py-2 rounded-2xl flex items-center gap-3 shadow-2xl hidden">
+                    <button id="btn-prev-page"
+                        class="p-2 rounded-xl hover:bg-slate-200/50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-blue-600 transition text-sm flex items-center gap-1 font-semibold"
+                        title="Halaman Sebelumnya">
+                        <i class="fa-solid fa-chevron-left"></i> Prev
+                    </button>
+
+                    <div
+                        class="flex items-center gap-1 px-2 text-xs font-semibold">
+                        <input type="number" id="current-page-input" value="1"
+                            min="1"
+                            class="w-12 text-center bg-slate-200/50 dark:bg-slate-800/80 rounded py-1 focus:outline-none">
+                        <span class="text-slate-400">/</span>
+                        <span id="total-pages-text">0</span>
+                    </div>
+
+                    <button id="btn-next-page"
+                        class="p-2 rounded-xl hover:bg-slate-200/50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-blue-600 transition text-sm flex items-center gap-1 font-semibold"
+                        title="Halaman Berikutnya">
+                        Next <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+
+                    <div class="h-4 w-px bg-slate-300 dark:bg-slate-700"></div>
+
+                    <!-- ZOOM CONTROLS -->
+                    <button id="zoom-out"
+                        class="p-1.5 rounded-lg hover:bg-slate-200/50 dark:hover:bg-slate-800 text-xs"
+                        title="Zoom Out"><i
+                            class="fa-solid fa-minus"></i></button>
+                    <button id="zoom-reset"
+                        class="text-xs font-semibold px-2 py-1 rounded-lg hover:bg-slate-200/50 dark:hover:bg-slate-800 transition"
+                        title="Reset Zoom">
+                        <span id="zoom-percentage">100%</span>
+                    </button>
+                    <button id="zoom-in"
+                        class="p-1.5 rounded-lg hover:bg-slate-200/50 dark:hover:bg-slate-800 text-xs"
+                        title="Zoom In"><i
+                            class="fa-solid fa-plus"></i></button>
+
+                    <div class="h-4 w-px bg-slate-300 dark:bg-slate-700"></div>
+
+                    <button id="auto-flip-btn"
+                        class="p-1.5 rounded-lg hover:bg-slate-200/50 dark:hover:bg-slate-800 text-xs"
+                        title="Auto Flip Slideshow"><i
+                            class="fa-solid fa-play"></i></button>
+                </div>
+
+                <!-- READING PROGRESS BAR -->
+                <div
+                    class="absolute top-0 left-0 right-0 h-1 bg-slate-200 dark:bg-slate-800 z-30">
+                    <div id="reading-progress-bar"
+                        class="h-full bg-gradient-to-r from-blue-600 to-indigo-500 w-0 transition-all duration-200"></div>
+                </div>
+            </main>
+
+            <!-- FILTER PANEL -->
+            <div id="filter-panel"
+                class="absolute top-16 right-4 z-40 w-64 glass-panel rounded-2xl p-4 shadow-2xl hidden">
+                <h4
+                    class="font-bold text-xs uppercase text-slate-400 mb-3 tracking-wider">Mode
+                    Tampilan</h4>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <button
+                        class="filter-mode-btn active p-2 rounded-xl border border-blue-500 flex items-center gap-2"
+                        data-mode="normal"><i
+                            class="fa-solid fa-sun text-amber-500"></i>
+                        Normal</button>
+                    <button
+                        class="filter-mode-btn p-2 rounded-xl border border-slate-700 flex items-center gap-2"
+                        data-mode="sepia"><i
+                            class="fa-solid fa-eye text-amber-700"></i>
+                        Sepia</button>
+                    <button
+                        class="filter-mode-btn p-2 rounded-xl border border-slate-700 flex items-center gap-2"
+                        data-mode="night"><i
+                            class="fa-solid fa-moon text-indigo-400"></i>
+                        Malam</button>
+                    <button
+                        class="filter-mode-btn p-2 rounded-xl border border-slate-700 flex items-center gap-2"
+                        data-mode="dark-reader"><i
+                            class="fa-solid fa-circle-half-stroke text-slate-400"></i>
+                        Contrast</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- JAVASCRIPT ENGINE -->
+        <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        // =====================================================================
+        // DAFTAR BUKU DI SERVER — EDIT BAGIAN INI
+        // Taruh file PDF (dan gambar cover opsional) di folder "books/" yang
+        // berada tepat di samping file index.html ini, lalu sesuaikan daftar
+        // di bawah: title = judul tampilan, file = path relatif ke PDF,
+        // cover = path relatif ke gambar sampul (opsional, boleh dihapus).
+        // Catatan: fetch() hanya berfungsi jika halaman diakses lewat server
+        // HTTP (http://... atau https://...), BUKAN dibuka langsung sebagai
+        // file (file://...).
+        // =====================================================================
+        const LIBRARY = [
+            { id: 'buku-1', title: 'Nama Buku 1', file: 'buku-1.pdf', cover: 'cover_buku-1.jpg' },
+            { id: 'buku-2', title: 'Nama Buku 2', file: 'buku-2.pdf' },
+        ];
+
+        const state = {
+            pdfDoc: null,
+            pageFlip: null,
+            currentPage: 1,
+            totalPages: 0,
+            scale: 1.0,
+            soundEnabled: true,
+            isAutoFlipping: false,
+            autoFlipTimer: null,
+            sidebarOpen: true,
+            isFlipping: false,
+            pageTexts: null,
+            searchResults: [],
+            searchIndex: 0
+        };
+
+        const DOM = {
+            splashScreen: document.getElementById('splash-screen'),
+            splashProgress: document.getElementById('splash-progress'),
+            dropZone: document.getElementById('drop-zone'),
+            emptyState: document.getElementById('empty-state'),
+            bookStage: document.getElementById('book-stage'),
+            flipbook: document.getElementById('flipbook'),
+            viewerContainer: document.getElementById('viewer-container'),
+            floatingToolbar: document.getElementById('floating-toolbar'),
+            currentPageInput: document.getElementById('current-page-input'),
+            totalPagesText: document.getElementById('total-pages-text'),
+            zoomPercentage: document.getElementById('zoom-percentage'),
+            progressBar: document.getElementById('reading-progress-bar'),
+            sidebarLeft: document.getElementById('sidebar-left'),
+            sidebarIcon: document.getElementById('sidebar-icon'),
+            filterPanel: document.getElementById('filter-panel'),
+            toggleFullscreen: document.getElementById('toggle-fullscreen'),
+            fullscreenIcon: document.getElementById('fullscreen-icon'),
+            searchInput: document.getElementById('search-input'),
+            searchIcon: document.getElementById('search-icon'),
+            searchNav: document.getElementById('search-nav'),
+            searchCount: document.getElementById('search-count'),
+            searchPrev: document.getElementById('search-prev'),
+            searchNext: document.getElementById('search-next'),
+            searchClose: document.getElementById('search-close'),
+            autoFlipBtn: document.getElementById('auto-flip-btn'),
+            tabThumbs: document.getElementById('tab-thumbs'),
+            tabOutline: document.getElementById('tab-outline'),
+            tabLibrary: document.getElementById('tab-library')
+        };
+
+        const flipAudio = new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3');
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initSplashAnimation();
+            setupEvents();
+            renderLibrary();
+        });
+
+        function initSplashAnimation() {
+            gsap.to(DOM.splashProgress, { width: '100%', duration: 1.0, onComplete: () => {
+                gsap.to(DOM.splashScreen, { opacity: 0, duration: 0.4, onComplete: () => DOM.splashScreen.style.display = 'none' });
+            }});
+        }
+
+        function setupEvents() {
+            // Toggle Sidebar
+            document.getElementById('toggle-sidebar-left').onclick = toggleSidebar;
+
+            // Tab Switching (Thumbnails / Outline)
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => switchTab(btn));
+            });
+
+            // Toggle Controls
+            document.getElementById('toggle-theme').onclick = () => document.documentElement.classList.toggle('dark');
+            document.getElementById('toggle-filter-menu').onclick = (e) => {
+                e.stopPropagation();
+                DOM.filterPanel.classList.toggle('hidden');
+            };
+            document.getElementById('toggle-sound').onclick = (e) => {
+                state.soundEnabled = !state.soundEnabled;
+                e.currentTarget.classList.toggle('text-slate-400');
+                e.currentTarget.classList.toggle('text-blue-500');
+            };
+
+            // Close filter panel when clicking outside of it
+            document.addEventListener('click', (e) => {
+                if (!DOM.filterPanel.classList.contains('hidden') && !DOM.filterPanel.contains(e.target)) {
+                    DOM.filterPanel.classList.add('hidden');
+                }
+            });
+
+            DOM.toggleFullscreen.onclick = toggleFullScreen;
+
+            // FIX NAVIGASI HALAMAN PREV & NEXT
+            document.getElementById('btn-prev-page').onclick = () => {
+                if (state.pageFlip) state.pageFlip.flipPrev();
+            };
+            document.getElementById('btn-next-page').onclick = () => {
+                if (state.pageFlip) state.pageFlip.flipNext();
+            };
+
+            // Keyboard Navigation (arrows, page up/down, home/end, escape)
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    DOM.filterPanel.classList.add('hidden');
+                    closeSearch();
+                    return;
+                }
+                if (!state.pageFlip) return;
+                const tag = (document.activeElement && document.activeElement.tagName) || '';
+                if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+                if (e.key === 'ArrowRight' || e.key === 'PageDown') state.pageFlip.flipNext();
+                if (e.key === 'ArrowLeft' || e.key === 'PageUp') state.pageFlip.flipPrev();
+                if (e.key === 'Home') state.pageFlip.flip(0);
+                if (e.key === 'End') state.pageFlip.flip(state.totalPages - 1);
+            });
+
+            // MOUSE WHEEL PAGE FLIP NAVIGATION
+            let wheelTimeout;
+            DOM.viewerContainer.addEventListener('wheel', (e) => {
+                if (!state.pageFlip) return;
+
+                // Jika tidak menekan Ctrl, gunakan scroll mouse untuk pindah halaman
+                if (!e.ctrlKey) {
+                    e.preventDefault();
+                    if (state.isFlipping) return;
+
+                    clearTimeout(wheelTimeout);
+                    wheelTimeout = setTimeout(() => {
+                        if (e.deltaY > 0) {
+                            state.pageFlip.flipNext();
+                        } else if (e.deltaY < 0) {
+                            state.pageFlip.flipPrev();
+                        }
+                    }, 50);
+                } else {
+                    // Jika Ctrl ditekan, lakukan Zooming
+                    e.preventDefault();
+                    const delta = e.deltaY < 0 ? 0.1 : -0.1;
+                    setZoom(state.scale + delta);
+                }
+            }, { passive: false });
+
+            DOM.currentPageInput.onchange = (e) => {
+                let targetPage = parseInt(e.target.value, 10);
+                if (isNaN(targetPage)) targetPage = state.currentPage;
+                targetPage = Math.min(Math.max(targetPage, 1), Math.max(state.totalPages, 1));
+                e.target.value = targetPage;
+                if (state.pageFlip) state.pageFlip.flip(targetPage - 1);
+            };
+
+            // Zoom Handlers
+            document.getElementById('zoom-in').onclick = () => setZoom(state.scale + 0.15);
+            document.getElementById('zoom-out').onclick = () => setZoom(state.scale - 0.15);
+            document.getElementById('zoom-reset').onclick = () => setZoom(1.0);
+
+            document.getElementById('auto-flip-btn').onclick = toggleAutoFlip;
+
+            // Mode Filter Visual
+            document.querySelectorAll('.filter-mode-btn').forEach(btn => {
+                btn.onclick = (e) => {
+                    document.querySelectorAll('.filter-mode-btn').forEach(b => b.classList.remove('border-blue-500'));
+                    e.currentTarget.classList.add('border-blue-500');
+                    DOM.bookStage.className = `my-auto mx-auto mode-${e.currentTarget.dataset.mode} flex items-center justify-center w-full h-full`;
+                };
+            });
+
+            // Search Events
+            DOM.searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    performSearch(DOM.searchInput.value);
+                }
+            });
+            DOM.searchIcon.addEventListener('click', () => performSearch(DOM.searchInput.value));
+            DOM.searchPrev.addEventListener('click', () => stepSearchResult(-1));
+            DOM.searchNext.addEventListener('click', () => stepSearchResult(1));
+            DOM.searchClose.addEventListener('click', closeSearch);
+
+            // Keep flipbook responsive and centered on resize
+            window.addEventListener('resize', () => {
+                if (state.pageFlip) state.pageFlip.update();
+                centerFlipbook();
+            });
+        }
+
+        function switchTab(btn) {
+            document.querySelectorAll('.tab-btn').forEach(b => {
+                b.classList.remove('active', 'border-blue-600', 'dark:border-blue-400', 'text-blue-600', 'dark:text-blue-400');
+                b.classList.add('border-transparent');
+            });
+            btn.classList.remove('border-transparent');
+            btn.classList.add('active', 'border-blue-600', 'text-blue-600', 'dark:text-blue-400');
+
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            document.getElementById(btn.dataset.tab).classList.remove('hidden');
+        }
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+                DOM.fullscreenIcon.className = 'fa-solid fa-compress text-blue-500';
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+                DOM.fullscreenIcon.className = 'fa-solid fa-expand text-slate-600 dark:text-slate-300';
+            }
+        }
+
+        function toggleSidebar() {
+            state.sidebarOpen = !state.sidebarOpen;
+            if (state.sidebarOpen) {
+                DOM.sidebarLeft.classList.remove('sidebar-collapsed');
+                DOM.sidebarIcon.className = 'fa-solid fa-angles-left text-base';
+            } else {
+                DOM.sidebarLeft.classList.add('sidebar-collapsed');
+                DOM.sidebarIcon.className = 'fa-solid fa-angles-right text-base';
+            }
+            setTimeout(() => {
+                if (state.pageFlip) state.pageFlip.update();
+                centerFlipbook();
+            }, 300);
+        }
+
+        // Render daftar buku yang tersedia di server (lihat konfigurasi LIBRARY di atas)
+        function renderLibrary() {
+            const container = DOM.tabLibrary;
+            container.innerHTML = '';
+
+            if (!LIBRARY.length) {
+                container.innerHTML = '<p class="text-slate-400 text-center py-8 text-xs px-2">Belum ada buku di perpustakaan.<br>Tambahkan pada variabel <code>LIBRARY</code> di kode HTML ini.</p>';
+                return;
+            }
+
+            LIBRARY.forEach(book => {
+                const card = document.createElement('button');
+                card.type = 'button';
+                card.dataset.bookId = book.id;
+                card.className = 'library-item w-full flex items-center gap-3 p-2 rounded-xl hover:bg-slate-200/60 dark:hover:bg-slate-800/60 transition text-left';
+
+                const cover = document.createElement(book.cover ? 'img' : 'div');
+                cover.className = 'w-10 h-14 rounded shadow-sm shrink-0 object-cover bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white';
+                if (book.cover) {
+                    cover.src = book.cover;
+                    cover.alt = book.title;
+                    cover.onerror = () => {
+                        cover.removeAttribute('src');
+                        cover.outerHTML = `<div class="w-10 h-14 rounded shadow-sm shrink-0 bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white"><i class="fa-solid fa-book"></i></div>`;
+                    };
+                } else {
+                    cover.innerHTML = '<i class="fa-solid fa-book"></i>';
+                }
+
+                const label = document.createElement('span');
+                label.className = 'text-xs font-semibold leading-snug';
+                label.textContent = book.title;
+
+                card.appendChild(cover);
+                card.appendChild(label);
+                card.onclick = () => loadBookFromServer(book);
+                container.appendChild(card);
+            });
+        }
+
+        function highlightLibraryItem(id) {
+            document.querySelectorAll('.library-item').forEach(el => el.classList.remove('library-active'));
+            if (!id) return;
+            const el = document.querySelector(`.library-item[data-book-id="${id}"]`);
+            if (el) el.classList.add('library-active');
+        }
+
+        // Ambil dan buka salah satu buku yang sudah ada di server
+        async function loadBookFromServer(book) {
+            if (!window.St || !window.St.PageFlip) {
+                Swal.fire('Gagal Memuat Engine', 'Library flipbook (StPageFlip) gagal dimuat. Periksa koneksi internet Anda.', 'error');
+                return;
+            }
+
+            Swal.fire({
+                title: 'Mengambil Buku dari Server...',
+                html: `<div id="swal-progress-text" class="text-xs text-slate-400">Mengunduh "${book.title}"...</div>`,
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            try {
+                state.pageTexts = null;
+                closeSearch();
+
+                const response = await fetch(book.file);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const arrayBuffer = await response.arrayBuffer();
+                const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                await loadPdfIntoReader(pdfDoc, book.title);
+
+                highlightLibraryItem(book.id);
+                Swal.close();
+            } catch (err) {
+                console.error(err);
+                Swal.fire(
+                    'Gagal Memuat Buku',
+                    `Tidak bisa mengambil "${book.title}" dari "${book.file}". Pastikan file tersebut ada di server dan halaman ini diakses lewat http/https (bukan dibuka langsung sebagai file lokal).`,
+                    'error'
+                );
+            }
+        }
+
+        // Logika bersama untuk menampilkan dokumen PDF yang sudah dimuat
+        async function loadPdfIntoReader(pdfDoc, title) {
+            state.pdfDoc = pdfDoc;
+            state.totalPages = pdfDoc.numPages;
+
+            DOM.emptyState.classList.add('hidden');
+            DOM.bookStage.classList.remove('hidden');
+            DOM.floatingToolbar.classList.remove('hidden');
+            DOM.totalPagesText.textContent = state.totalPages;
+            DOM.currentPageInput.max = state.totalPages;
+            if (title) document.title = `${title} - Buku PAI PDF Reader`;
+
+            await build3DFlipbook();
+            await renderThumbnails();
+            await renderOutline();
+
+            highlightThumb(1);
+        }
+
+        function setSwalProgress(text) {
+            const el = document.getElementById('swal-progress-text');
+            if (el) el.textContent = text;
+        }
+
+        // INIT ENGINE 3D BUKU DENGAN STPAGEFLIP
+        async function build3DFlipbook() {
+            DOM.flipbook.innerHTML = '';
+
+            const firstPage = await state.pdfDoc.getPage(1);
+            const viewport = firstPage.getViewport({ scale: 1.0 });
+
+            // Hitung Rasio Halaman
+            const pageWidth = viewport.width;
+            const pageHeight = viewport.height;
+
+            for (let i = 1; i <= state.totalPages; i++) {
+                setSwalProgress(`Merender halaman ${i}/${state.totalPages} (${Math.round((i / state.totalPages) * 100)}%)`);
+
+                const pageDiv = document.createElement('div');
+                pageDiv.className = `page-sheet ${i % 2 === 0 ? '--left' : '--right'}`;
+
+                const canvas = document.createElement('canvas');
+                canvas.className = 'w-full h-full block';
+                pageDiv.appendChild(canvas);
+                DOM.flipbook.appendChild(pageDiv);
+
+                const page = await state.pdfDoc.getPage(i);
+                const pageViewport = page.getViewport({ scale: 1.5 });
+                canvas.width = pageViewport.width;
+                canvas.height = pageViewport.height;
+                await page.render({ canvasContext: canvas.getContext('2d'), viewport: pageViewport }).promise;
+            }
+
+            if (state.pageFlip) {
+                state.pageFlip.destroy();
+            }
+
+            // INISIALISASI BUKU UNTUK SENSASI BUKU ASLI (OPENING BUKU 3D)
+            state.pageFlip = new St.PageFlip(DOM.flipbook, {
+                width: Math.min(pageWidth, 500),
+                height: Math.min(pageHeight, 700),
+                size: 'stretch',
+                minWidth: 280,
+                maxWidth: 900,
+                minHeight: 400,
+                maxHeight: 1100,
+                drawShadow: true,
+                maxShadowOpacity: 0.6,
+                showCover: true,
+                usePortrait: window.innerWidth < 768,
+                startPage: 0,
+                flippingTime: 800,
+                useMouseEvents: true, // Dukungan klik dan drag mouse/sentuh di sudut buku
+                mobileScrollSupport: false,
+                clickEventForward: true
+            });
+
+            state.pageFlip.loadFromHTML(document.querySelectorAll('.page-sheet'));
+
+            // EVENT HANDLERS SAAT HALAMAN BERPINDAH
+            state.pageFlip.on('flip', (e) => {
+                state.currentPage = e.data + 1;
+                DOM.currentPageInput.value = state.currentPage;
+                updateProgress();
+                highlightThumb(state.currentPage);
+
+                if (state.soundEnabled) {
+                    flipAudio.currentTime = 0;
+                    flipAudio.play().catch(() => {});
+                }
+            });
+
+            state.pageFlip.on('changeState', (e) => {
+                state.isFlipping = (e.data !== 'read');
+            });
+
+            updateProgress();
+            requestAnimationFrame(() => centerFlipbook());
+        }
+
+        function setZoom(newScale) {
+            state.scale = Math.min(Math.max(0.6, newScale), 2.2);
+            DOM.zoomPercentage.textContent = `${Math.round(state.scale * 100)}%`;
+            applyTransform();
+        }
+
+        // Measures the flipbook's natural (unscaled) position and computes the
+        // offset needed to place it exactly in the middle of the viewer stage.
+        // This is done directly instead of relying only on CSS flex centering,
+        // because StPageFlip sets its own inline position/size styles on the
+        // book element which can otherwise throw off simple flex/margin centering.
+        function centerFlipbook() {
+            if (!state.pageFlip || !DOM.flipbook) return;
+
+            gsap.set(DOM.flipbook, { clearProps: 'transform' });
+
+            const stageRect = DOM.bookStage.getBoundingClientRect();
+            const bookRect = DOM.flipbook.getBoundingClientRect();
+
+            const stageCenterX = stageRect.left + stageRect.width / 2;
+            const stageCenterY = stageRect.top + stageRect.height / 2;
+            const bookCenterX = bookRect.left + bookRect.width / 2;
+            const bookCenterY = bookRect.top + bookRect.height / 2;
+
+            state.centerOffset = {
+                x: stageCenterX - bookCenterX,
+                y: stageCenterY - bookCenterY
+            };
+
+            applyTransform(true);
+        }
+
+        function applyTransform(instant) {
+            const off = state.centerOffset || { x: 0, y: 0 };
+            gsap.to(DOM.flipbook, {
+                x: off.x,
+                y: off.y,
+                scale: state.scale,
+                duration: instant ? 0 : 0.3,
+                ease: "power2.out",
+                overwrite: 'auto'
+            });
+        }
+
+        function updateProgress() {
+            const percent = (state.currentPage / state.totalPages) * 100;
+            DOM.progressBar.style.width = `${percent}%`;
+        }
+
+        function toggleAutoFlip() {
+            const btn = DOM.autoFlipBtn;
+            const icon = btn.querySelector('i');
+            if (state.isAutoFlipping) {
+                clearInterval(state.autoFlipTimer);
+                state.isAutoFlipping = false;
+                btn.classList.remove('bg-blue-600', 'text-white');
+                icon.className = 'fa-solid fa-play';
+            } else {
+                state.isAutoFlipping = true;
+                btn.classList.add('bg-blue-600', 'text-white');
+                icon.className = 'fa-solid fa-pause';
+                state.autoFlipTimer = setInterval(() => {
+                    if (state.currentPage < state.totalPages) state.pageFlip?.flipNext();
+                    else toggleAutoFlip();
+                }, 3500);
+            }
+        }
+
+        async function renderThumbnails() {
+            const container = DOM.tabThumbs;
+            container.innerHTML = '';
+
+            for (let i = 1; i <= state.totalPages; i++) {
+                setSwalProgress(`Membuat thumbnail ${i}/${state.totalPages}...`);
+
+                const page = await state.pdfDoc.getPage(i);
+                const viewport = page.getViewport({ scale: 0.15 });
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'cursor-pointer text-center p-1 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 transition';
+                wrapper.dataset.page = i;
+
+                wrapper.onclick = () => {
+                    if (state.pageFlip) state.pageFlip.flip(i - 1);
+                };
+
+                const canvas = document.createElement('canvas');
+                canvas.className = 'rounded border shadow-sm mx-auto';
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+
+                await page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise;
+
+                const label = document.createElement('span');
+                label.className = 'text-[10px] text-slate-400 font-semibold block';
+                label.textContent = `Hal ${i}`;
+
+                wrapper.appendChild(canvas);
+                wrapper.appendChild(label);
+                container.appendChild(wrapper);
+            }
+        }
+
+        function highlightThumb(page) {
+            document.querySelectorAll('#tab-thumbs > div[data-page]').forEach(el => el.classList.remove('thumb-active'));
+            const el = document.querySelector(`#tab-thumbs > div[data-page="${page}"]`);
+            if (el) el.classList.add('thumb-active');
+        }
+
+        // OUTLINE / DAFTAR ISI PDF
+        async function renderOutline() {
+            const container = DOM.tabOutline;
+            container.innerHTML = '';
+            try {
+                const outline = await state.pdfDoc.getOutline();
+                if (!outline || outline.length === 0) {
+                    container.innerHTML = '<p class="text-slate-400 text-center py-8">Daftar isi tidak ditemukan</p>';
+                    return;
+                }
+                const list = await buildOutlineList(outline);
+                container.appendChild(list);
+            } catch (err) {
+                console.error(err);
+                container.innerHTML = '<p class="text-slate-400 text-center py-8">Daftar isi tidak ditemukan</p>';
+            }
+        }
+
+        async function buildOutlineList(items) {
+            const ul = document.createElement('ul');
+            ul.className = 'space-y-1';
+
+            for (const item of items) {
+                const li = document.createElement('li');
+                const btn = document.createElement('button');
+                btn.className = 'text-left w-full px-2 py-1.5 rounded-lg hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition truncate';
+                btn.textContent = item.title;
+                btn.title = item.title;
+                btn.onclick = async () => {
+                    try {
+                        let pageIndex = null;
+                        let dest = item.dest;
+                        if (typeof dest === 'string') dest = await state.pdfDoc.getDestination(dest);
+                        if (dest) pageIndex = await state.pdfDoc.getPageIndex(dest[0]);
+                        if (pageIndex !== null && state.pageFlip) state.pageFlip.flip(pageIndex);
+                    } catch (err) {
+                        console.error(err);
+                    }
+                };
+                li.appendChild(btn);
+
+                if (item.items && item.items.length) {
+                    const sub = await buildOutlineList(item.items);
+                    sub.className = 'space-y-1 pl-3 border-l border-slate-300/40 dark:border-slate-700/40 ml-2 mt-1';
+                    li.appendChild(sub);
+                }
+                ul.appendChild(li);
+            }
+            return ul;
+        }
+
+        // PENCARIAN TEKS DI DALAM PDF
+        async function ensureTextIndex() {
+            if (state.pageTexts) return state.pageTexts;
+            state.pageTexts = [];
+            for (let i = 1; i <= state.totalPages; i++) {
+                const page = await state.pdfDoc.getPage(i);
+                const content = await page.getTextContent();
+                const text = content.items.map(it => it.str).join(' ').toLowerCase();
+                state.pageTexts.push(text);
+            }
+            return state.pageTexts;
+        }
+
+        async function performSearch(rawQuery) {
+            const query = (rawQuery || '').trim().toLowerCase();
+            if (!state.pdfDoc) return;
+            if (!query) {
+                closeSearch();
+                return;
+            }
+
+            Swal.fire({ title: 'Mencari...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            const texts = await ensureTextIndex();
+            Swal.close();
+
+            state.searchResults = [];
+            texts.forEach((t, idx) => { if (t.includes(query)) state.searchResults.push(idx); });
+            state.searchIndex = 0;
+
+            if (state.searchResults.length === 0) {
+                DOM.searchCount.textContent = '0/0';
+                DOM.searchNav.classList.add('show');
+                Swal.fire({ icon: 'info', title: 'Tidak Ditemukan', text: `Kata kunci "${rawQuery}" tidak ditemukan di dokumen ini.`, timer: 1800, showConfirmButton: false });
+                return;
+            }
+
+            DOM.searchNav.classList.add('show');
+            updateSearchCount();
+            goToSearchResult();
+        }
+
+        function updateSearchCount() {
+            DOM.searchCount.textContent = `${state.searchIndex + 1}/${state.searchResults.length}`;
+        }
+
+        function goToSearchResult() {
+            if (!state.searchResults.length || !state.pageFlip) return;
+            const page = state.searchResults[state.searchIndex];
+            state.pageFlip.flip(page);
+        }
+
+        function stepSearchResult(direction) {
+            if (!state.searchResults.length) return;
+            state.searchIndex = (state.searchIndex + direction + state.searchResults.length) % state.searchResults.length;
+            updateSearchCount();
+            goToSearchResult();
+        }
+
+        function closeSearch() {
+            state.searchResults = [];
+            state.searchIndex = 0;
+            DOM.searchNav.classList.remove('show');
+            DOM.searchCount.textContent = '0/0';
+        }
+    </script>
+    </body>
+</html>
