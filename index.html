@@ -473,7 +473,8 @@
             isFlipping: false,
             pageTexts: null,
             searchResults: [],
-            searchIndex: 0
+            searchIndex: 0,
+            loadToken: 0
         };
 
         const DOM = {
@@ -735,6 +736,21 @@
                 return;
             }
 
+            // Token unik untuk request ini. Kalau user klik buku lain sebelum
+            // proses ini selesai, token akan berbeda dan hasil render lama
+            // tidak akan dipakai (mencegah race condition antar-klik).
+            const myToken = ++state.loadToken;
+
+            // Hentikan dulu buku 3D yang sedang aktif SEBELUM memulai proses
+            // baru, supaya tidak ada instance StPageFlip lama yang masih
+            // menempel ke elemen DOM yang nanti akan diganti.
+            stopAutoFlipIfRunning();
+            if (state.pageFlip) {
+                try { state.pageFlip.destroy(); } catch (err) { console.warn(err); }
+                state.pageFlip = null;
+            }
+            DOM.flipbook.innerHTML = '';
+
             Swal.fire({
                 title: 'Mengambil Buku dari Server...',
                 html: `<div id="swal-progress-text" class="text-xs text-slate-400">Mengunduh "${book.title}"...</div>`,
@@ -746,15 +762,24 @@
                 state.pageTexts = null;
                 closeSearch();
 
-                const response = await fetch(book.file);
+                const response = await fetch(book.file, { cache: 'no-store' });
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const arrayBuffer = await response.arrayBuffer();
                 const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+                // Kalau selama fetch/parsing di atas user sudah klik buku lain,
+                // token sudah berubah — batalkan render buku ini supaya tidak
+                // menimpa buku yang baru diklik.
+                if (myToken !== state.loadToken) return;
+
                 await loadPdfIntoReader(pdfDoc, book.title);
+
+                if (myToken !== state.loadToken) return;
 
                 highlightLibraryItem(book.id);
                 Swal.close();
             } catch (err) {
+                if (myToken !== state.loadToken) return;
                 console.error(err);
                 Swal.fire(
                     'Gagal Memuat Buku',
@@ -764,16 +789,22 @@
             }
         }
 
+        function stopAutoFlipIfRunning() {
+            if (state.isAutoFlipping) toggleAutoFlip();
+        }
+
         // Logika bersama untuk menampilkan dokumen PDF yang sudah dimuat
         async function loadPdfIntoReader(pdfDoc, title) {
             state.pdfDoc = pdfDoc;
             state.totalPages = pdfDoc.numPages;
+            state.currentPage = 1;
 
             DOM.emptyState.classList.add('hidden');
             DOM.bookStage.classList.remove('hidden');
             DOM.floatingToolbar.classList.remove('hidden');
             DOM.totalPagesText.textContent = state.totalPages;
             DOM.currentPageInput.max = state.totalPages;
+            DOM.currentPageInput.value = 1;
             if (title) document.title = `${title} - Buku Digital PAI PDF Reader`;
 
             await build3DFlipbook();
@@ -790,6 +821,10 @@
 
         // INIT ENGINE 3D BUKU DENGAN STPAGEFLIP
         async function build3DFlipbook() {
+            // Catatan: penghancuran instance StPageFlip yang lama (jika ada)
+            // sudah dilakukan SEBELUM fungsi ini dipanggil (lihat
+            // loadBookFromServer), sehingga di sini DOM.flipbook selalu
+            // dalam keadaan bersih dan siap diisi ulang dengan aman.
             DOM.flipbook.innerHTML = '';
 
             const firstPage = await state.pdfDoc.getPage(1);
@@ -815,10 +850,6 @@
                 canvas.width = pageViewport.width;
                 canvas.height = pageViewport.height;
                 await page.render({ canvasContext: canvas.getContext('2d'), viewport: pageViewport }).promise;
-            }
-
-            if (state.pageFlip) {
-                state.pageFlip.destroy();
             }
 
             // INISIALISASI BUKU UNTUK SENSASI BUKU ASLI (OPENING BUKU 3D)
